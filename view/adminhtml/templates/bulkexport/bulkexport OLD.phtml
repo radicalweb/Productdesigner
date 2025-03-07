@@ -1,0 +1,62 @@
+<?php echo $block->getGridHtml() ?>
+<script type="text/javascript">
+	var processedIds = [];
+	require(['jquery'], function($){
+		var jobUrl = '<?php echo $this->getUrl('productdesigner/bulkexport/runqueue');?>';
+		var updatesUrl = '<?php echo $this->getUrl('productdesigner/bulkexport/checkupdates');?>';
+		jQuery.ajax({
+			type: "POST",
+			url: jobUrl,
+			data: {
+				form_key: window.FORM_KEY
+			}
+		});
+		setInterval(function(){
+			jQuery.ajax({
+				type: "POST",
+				url: updatesUrl,
+				dataType: "json",
+				data: {
+					form_key: window.FORM_KEY
+				},
+				success: function(result){
+					var processNextJob = false;
+					jQuery.each(result, function(id, data){
+						var itemHtml = '<p>Yes</p>';
+						if(data.pdf_file_printing != null){
+							itemHtml += '<a href="'+data.base_url+data.pdf_file_printing+'" target="_blank">Printing</a><br />';
+						}
+						if(data.pdf_file_sublimation != null){
+							itemHtml += '<a href="'+data.base_url+data.pdf_file_sublimation+'" target="_blank">Sublimation</a><br />';
+						}
+						if(data.pdf_file_engraving != null){
+							itemHtml += '<a href="'+data.base_url+data.pdf_file_engraving+'" target="_blank">Engraving</a><br />';
+						}
+						if(data.pdf_file_wood != null){
+							itemHtml += '<a href="'+data.base_url+data.pdf_file_wood+'" target="_blank">Wood</a><br />';
+						}
+						jQuery(".data-grid tbody tr:visible").each(function(index, row){
+							if($(row).find('td').first().text().trim() == id){
+								$(row).find('td.col-finished').html(itemHtml);
+							}
+						});
+						if(jQuery.inArray(id, processedIds) == -1){
+							processNextJob = true;
+							processedIds.push(id);
+						}
+					});
+					if(processNextJob == true){
+						// Start processing next job
+						jQuery.ajax({
+							type: "POST",
+							url: jobUrl,
+							data: {
+								form_key: window.FORM_KEY
+							}
+						});
+					}
+				}
+			});
+		}, 3000);
+	});
+</script>
